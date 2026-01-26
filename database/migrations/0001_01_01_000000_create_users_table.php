@@ -21,8 +21,8 @@ return new class extends Migration {
             $table->string('password')->nullable();
             $table->string('role')->default('client');
             $table->string('image')->nullable();
-            $table->foreignIdFor(Address::class)->nullable()->constrained()->nullOnDelete();
-            $table->foreignIdFor(ClientCode::class)->nullable()->constrained()->nullOnDelete();
+            $table->foreignIdFor(Address::class)->nullable();
+            $table->foreignIdFor(ClientCode::class)->nullable();
             $table->rememberToken();
             $table->timestamps();
         });
