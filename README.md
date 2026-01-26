@@ -1,3 +1,3 @@
 # Run the container
 
-docker run --name $containerName -p 8010:80 -d $imageName
+docker run --name maboo_api_overhaul -p 8010:80 -d lucienozandry/maboo_api_overhaul:latest
