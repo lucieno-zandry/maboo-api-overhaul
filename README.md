@@ -1,66 +1,618 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Run the container
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+docker run --name maboo_api_overhaul -p 8010:80 -d lucienozandry/maboo_api_overhaul:latest
 
-## About Laravel
+# API Documentation for Frontend Developers
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+This document provides comprehensive information about the available API functions for interacting with the backend services. All functions use the `appFetch` utility and return promises.
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Authentication
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+### `getEmailInfo(email: string)`
+Checks if an email address is already registered.
 
-## Learning Laravel
+**Parameters:**
+- `email` - Email address to check
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+**Returns:**
+```typescript
+{ is_taken: boolean }
+```
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+**Example:**
+```typescript
+const { is_taken } = await getEmailInfo("user@example.com");
+```
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+---
 
-## Laravel Sponsors
+### `logInWithEmail(data)`
+Authenticates a user with email and password.
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+**Parameters:**
+```typescript
+{
+  email: FormDataEntryValue,
+  password: FormDataEntryValue
+}
+```
 
-### Premium Partners
+**Returns:**
+```typescript
+{
+  auth: User,
+  token: string
+}
+```
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[WebReinvent](https://webreinvent.com/)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Jump24](https://jump24.co.uk)**
-- **[Redberry](https://redberry.international/laravel/)**
-- **[Active Logic](https://activelogic.com)**
-- **[byte5](https://byte5.de)**
-- **[OP.GG](https://op.gg)**
+**Example:**
+```typescript
+const { auth, token } = await logInWithEmail({
+  email: "user@example.com",
+  password: "password123"
+});
+```
 
-## Contributing
+---
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+### `registerUser(data)`
+Creates a new user account.
 
-## Code of Conduct
+**Parameters:**
+```typescript
+{
+  email: FormDataEntryValue,
+  password: FormDataEntryValue,
+  password_confirmation: FormDataEntryValue,
+  name: string
+}
+```
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+**Returns:**
+```typescript
+{
+  auth: User,
+  token: string
+}
+```
 
-## Security Vulnerabilities
+**Example:**
+```typescript
+const { auth, token } = await registerUser({
+  email: "newuser@example.com",
+  password: "securepass",
+  password_confirmation: "securepass",
+  name: "John Doe"
+});
+```
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+---
 
-## License
+### `getAuthUser()`
+Retrieves the currently authenticated user's information.
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+**Returns:**
+```typescript
+{ user: User }
+```
+
+---
+
+### `updateAuthUser(payload)`
+Updates the authenticated user's profile information.
+
+**Parameters:**
+```typescript
+{
+  name?: string,
+  email?: string,
+  password?: string,
+  password_confirmation?: string,
+  current_password?: string
+}
+```
+
+**Returns:**
+```typescript
+{ user: User }
+```
+
+---
+
+### `sendEmailVerificationCode()`
+Sends a verification code to the user's email address.
+
+**Returns:**
+```typescript
+{ link_sent: boolean }
+```
+
+---
+
+### `attemptEmailVerification(code)`
+Verifies a user's email address using the provided code.
+
+**Parameters:**
+- `code` - Verification code received via email
+
+**Returns:**
+```typescript
+{ user: User }
+```
+
+---
+
+### `sendPasswordResetLink(email)`
+Sends a password reset link to the specified email address.
+
+**Parameters:**
+- `email` - Email address for password reset
+
+**Returns:**
+```typescript
+{ link_sent: boolean }
+```
+
+---
+
+### `resetPassword(payload)`
+Resets the user's password using a reset token.
+
+**Parameters:**
+```typescript
+FormData | {
+  password: FormDataEntryValue,
+  password_confirmation: FormDataEntryValue,
+  token: FormDataEntryValue
+}
+```
+
+**Returns:**
+```typescript
+{
+  user: User,
+  token: string
+}
+```
+
+---
+
+## Products
+
+### `getProducts(params?)`
+Retrieves a list of products with optional filtering and includes.
+
+**Parameters:**
+```typescript
+ProductQueryParams (optional)
+```
+
+By default includes: `variants`, `images`, `category`
+
+**Returns:**
+```typescript
+{ products: Product[] }
+```
+
+**Example:**
+```typescript
+const { products } = await getProducts({
+  where: { status: 'active' },
+  limit: 10
+});
+```
+
+---
+
+### `getProduct(slug: string)`
+Retrieves a single product by its slug.
+
+**Parameters:**
+- `slug` - Product identifier slug
+
+**Returns:**
+```typescript
+{ product: Product }
+```
+
+**Example:**
+```typescript
+const { product } = await getProduct("blue-shirt-xl");
+```
+
+---
+
+### `searchProducts(keywords: string)`
+Searches for products matching the provided keywords.
+
+**Parameters:**
+- `keywords` - Search terms
+
+**Returns:**
+```typescript
+{ products: Product[] }
+```
+
+Automatically includes: `category`, `variants`, `images`
+
+**Example:**
+```typescript
+const { products } = await searchProducts("summer dress");
+```
+
+---
+
+### `getCategories()`
+Retrieves all product categories.
+
+**Returns:**
+```typescript
+{ categories: Category[] }
+```
+
+---
+
+## Shopping Cart
+
+### `addVariantToCart(payload)`
+Adds a product variant to the user's cart.
+
+**Parameters:**
+```typescript
+{
+  variant_id: number,
+  count: number
+}
+```
+
+**Returns:**
+```typescript
+{ cart_item: CartItem }
+```
+
+**Example:**
+```typescript
+const { cart_item } = await addVariantToCart({
+  variant_id: 42,
+  count: 2
+});
+```
+
+---
+
+### `getCartItems(options?)`
+Retrieves cart items with optional filtering.
+
+**Parameters:**
+```typescript
+{
+  where?: WhereConditions<CartItem>,
+  whereIn?: WhereInConditions
+}
+```
+
+**Returns:**
+```typescript
+{ cart_items: CartItem[] }
+```
+
+**Example:**
+```typescript
+const { cart_items } = await getCartItems({
+  where: { status: 'active' }
+});
+```
+
+---
+
+### `updateCartItem(cartItemId, payload)`
+Updates the quantity of a cart item.
+
+**Parameters:**
+- `cartItemId` - ID of the cart item
+- `payload` - `{ count: number }`
+
+**Returns:**
+```typescript
+{ cart_item: CartItem }
+```
+
+**Example:**
+```typescript
+const { cart_item } = await updateCartItem(5, { count: 3 });
+```
+
+---
+
+### `removeCartItem(cartItemId)`
+Removes an item from the cart.
+
+**Parameters:**
+- `cartItemId` - ID of the cart item to remove
+
+**Returns:** Empty response
+
+---
+
+## Addresses
+
+### `getAuthAddresses()`
+Retrieves all addresses for the authenticated user.
+
+**Returns:**
+```typescript
+{ addresses: Address[] }
+```
+
+---
+
+### `createAddress(payload)`
+Creates a new address for the user.
+
+**Parameters:**
+- `payload` - `FormData` containing address information
+
+**Returns:**
+```typescript
+{
+  address: Address,
+  user: User
+}
+```
+
+---
+
+### `updateAddress(id, payload)`
+Updates an existing address.
+
+**Parameters:**
+- `id` - Address ID
+- `payload` - `FormData` with updated address information
+
+**Returns:**
+```typescript
+{
+  address: Address,
+  user: User
+}
+```
+
+---
+
+### `removeAddresses(ids)`
+Deletes one or more addresses.
+
+**Parameters:**
+- `ids` - Array of address IDs to delete
+
+**Returns:**
+```typescript
+{ deleted: number }
+```
+
+**Example:**
+```typescript
+const { deleted } = await removeAddresses([1, 2, 3]);
+```
+
+---
+
+## Orders
+
+### `createOrder(payload)`
+Creates a new order from cart items.
+
+**Parameters:**
+```typescript
+{
+  cart_item_ids: number[],
+  address_id: number,
+  coupon_id?: number
+}
+```
+
+**Returns:**
+```typescript
+{ order: Order }
+```
+
+**Example:**
+```typescript
+const { order } = await createOrder({
+  cart_item_ids: [1, 2, 3],
+  address_id: 5,
+  coupon_id: 10
+});
+```
+
+---
+
+### `getOrders()`
+Retrieves all orders for the authenticated user.
+
+**Returns:**
+```typescript
+{ orders: Order[] }
+```
+
+Orders are sorted by `updated_at` in descending order and include `cart_items` and `transactions`.
+
+---
+
+### `getOrder(uuid)`
+Retrieves a single order by its UUID.
+
+**Parameters:**
+- `uuid` - Order UUID
+
+**Returns:**
+```typescript
+{ order: Order }
+```
+
+Includes: `cart_items`, `transactions`, `shipments`
+
+---
+
+### `deleteOrder(uuid)`
+Deletes an order.
+
+**Parameters:**
+- `uuid` - Order UUID
+
+**Returns:**
+```typescript
+{ message: string }
+```
+
+---
+
+## Coupons
+
+### `getCouponFromCode(code)`
+Retrieves coupon information using a coupon code.
+
+**Parameters:**
+- `code` - Coupon code string
+
+**Returns:**
+```typescript
+{ coupon: Coupon }
+```
+
+**Example:**
+```typescript
+const { coupon } = await getCouponFromCode("SUMMER2024");
+```
+
+---
+
+## Transactions
+
+### `createTransaction(data)`
+Creates a payment transaction for an order.
+
+**Parameters:**
+```typescript
+{
+  method: Transaction['method'],
+  order_uuid: Transaction['order_uuid'],
+  amount: Transaction['amount']
+}
+```
+
+**Returns:**
+```typescript
+{ transaction: Transaction }
+```
+
+---
+
+## Notifications
+
+### `getNotifications()`
+Retrieves all notifications for the user.
+
+**Returns:**
+```typescript
+{
+  notifications: AppNotification[],
+  unread: AppNotification[],
+  unread_count: number
+}
+```
+
+---
+
+### `getUnreadNotifications()`
+Retrieves only unread notifications.
+
+**Returns:**
+```typescript
+{
+  notifications: AppNotification[],
+  count: number
+}
+```
+
+---
+
+### `clearReadNotifications()`
+Removes all read notifications.
+
+**Returns:**
+```typescript
+{ message: string }
+```
+
+---
+
+### `markAllNotificationsAsRead()`
+Marks all notifications as read.
+
+**Returns:**
+```typescript
+{ message: string }
+```
+
+---
+
+### `removeNotification(id)`
+Deletes a specific notification.
+
+**Parameters:**
+- `id` - Notification ID
+
+**Returns:**
+```typescript
+{ message: string }
+```
+
+---
+
+### `markNotificationAsRead(id)`
+Marks a specific notification as read.
+
+**Parameters:**
+- `id` - Notification ID
+
+**Returns:**
+```typescript
+{
+  message: string,
+  notification: AppNotification
+}
+```
+
+---
+
+## Type Definitions
+
+The API uses the following TypeScript types (ensure these are defined in your project):
+
+- `User` - User account information
+- `Product` - Product details
+- `CartItem` - Shopping cart item
+- `Address` - Delivery/billing address
+- `Order` - Order information
+- `Coupon` - Discount coupon
+- `Transaction` - Payment transaction
+- `AppNotification` - User notification
+- `Category` - Product category
+- `ProductQueryParams` - Product query parameters
+- `WhereConditions` - Query filter conditions
+- `WhereInConditions` - "IN" query conditions
+
+## Error Handling
+
+All API functions return promises and should be wrapped in try-catch blocks for proper error handling:
+
+```typescript
+try {
+  const { products } = await getProducts();
+  // Handle success
+} catch (error) {
+  // Handle error
+  console.error('Failed to fetch products:', error);
+}
+```
