@@ -2,6 +2,8 @@
 
 docker run --name maboo_api_overhaul -p 8010:80 -d lucienozandry/maboo_api_overhaul:latest
 
+docker run --name maboo_api_overhaul -p 8010:80 -e APP_URL=http://102.16.254.6:8010 -v /etc/docker/api/dev/storage:/var/www/html/storage -v /etc/docker/api/dev/.env:/var/www/html/.env -d lucienozandry/maboo_api_overhaul:latest
+
 # API Documentation for Frontend Developers
 
 This document provides comprehensive information about the available API functions for interacting with the backend services. All functions use the `appFetch` utility and return promises.
