@@ -1,8 +1,35 @@
+# Update the .env file
+
+The file location is
+```
+/etc/docker/api/{env:dev|prod}/.env
+```
+
 # Run the container
 
 docker run --name maboo_api_overhaul -p 8010:80 -d lucienozandry/maboo_api_overhaul:latest
 
 docker run --name maboo_api_overhaul -p 8010:80 -e APP_URL=http://102.16.254.6:8010 -v /etc/docker/api/dev/storage:/var/www/html/storage -v /etc/docker/api/dev/.env:/var/www/html/.env -d lucienozandry/maboo_api_overhaul:latest
+
+# Run typesense container
+
+```
+  services:
+  typesense:
+    image: typesense/typesense:30.1
+    restart: on-failure
+    ports:
+      - "8108:8108"
+    volumes:
+      - ./typesense-data:/data
+    command: '--data-dir /data --api-key=xyz --enable-cors'
+```
+
+# Import models for typesense indexation
+
+```
+php artisan scout:import "App\Models\Product"
+```
 
 # API Documentation for Frontend Developers
 
