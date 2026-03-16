@@ -20,7 +20,13 @@ class VariantGroup extends Model
         'product_id'
     ];
 
-    public function variant_options(){
+    public function variant_options()
+    {
         return $this->hasMany(VariantOption::class);
+    }
+
+    public function product()
+    {
+        return $this->belongsTo(Product::class);
     }
 }
