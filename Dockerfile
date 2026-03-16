@@ -1,4 +1,4 @@
-FROM php:8.2-apache AS web
+FROM php:8.4-apache AS web
 
 RUN apt-get update && apt-get install -y \
     libzip-dev \
