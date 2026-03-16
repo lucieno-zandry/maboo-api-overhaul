@@ -28,13 +28,16 @@ RUN curl -sS https://getcomposer.org/installer | php -- \
     --install-dir=/usr/local/bin \
     --filename=composer
 
+RUN composer diagnose
+
 # Install dependencies WITHOUT running scripts
 RUN composer install \
     --no-dev \
     --optimize-autoloader \
     --no-interaction \
     --no-progress \
-    --no-scripts
+    --no-scripts \
+    -vvv
 
 RUN chown -R www-data:www-data storage bootstrap/cache
 
