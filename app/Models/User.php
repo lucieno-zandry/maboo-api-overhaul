@@ -7,11 +7,10 @@ use App\Traits\ApplyFilters;
 use App\Traits\DynamicConditionApplicable;
 use App\Traits\WithOrdering;
 use App\Traits\WithPagination;
-use App\Traits\WithRelationships;
 use Illuminate\Auth\Passwords\CanResetPassword;
-use Illuminate\Contracts\Auth\MustVerifyEmail;
-use Illuminate\Contracts\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
@@ -19,7 +18,7 @@ use Laravel\Sanctum\HasApiTokens;
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable, HasApiTokens, CanResetPassword, WithRelationships, WithPagination, WithOrdering, DynamicConditionApplicable, ApplyFilters;
+    use HasFactory, SoftDeletes, Notifiable, HasApiTokens, CanResetPassword, WithPagination, WithOrdering, DynamicConditionApplicable, ApplyFilters;
 
     /**
      * The attributes that are mass assignable.
@@ -33,7 +32,6 @@ class User extends Authenticatable
         'role',
         'client_code_id',
         'avatar_image_id',
-        'approved_at'
     ];
 
     /**
@@ -46,6 +44,10 @@ class User extends Authenticatable
         'remember_token',
     ];
 
+    protected $appends = [
+        'status'
+    ];
+
     /**
      * Get the attributes that should be cast.
      *
@@ -54,14 +56,13 @@ class User extends Authenticatable
     protected function casts(): array
     {
         return [
-            'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
     }
 
-    public function hasBeenApproved()
+    public function hasBeenApproved(): bool
     {
-        return !!$this->approved_at;
+        return $this->status?->status === 'approved';
     }
 
     public function canUseSpecialPrices()
@@ -130,5 +131,82 @@ class User extends Authenticatable
     public function avatar_image()
     {
         return $this->belongsTo(Image::class, 'avatar_image_id');
+    }
+
+    public function refund_requests()
+    {
+        return $this->hasMany(RefundRequest::class);
+    }
+
+    public function reviewed_refund_requests()
+    {
+        return $this->hasMany(RefundRequest::class, 'reviewed_by');
+    }
+
+    public function performed_transaction_audit_logs()
+    {
+        return $this->hasMany(TransactionAuditLog::class, 'performed_by');
+    }
+
+    public function reviewed_transactions()
+    {
+        return $this->hasMany(Transaction::class, 'reviewed_by');
+    }
+
+    public function scopeWithRelations(Builder $query)
+    {
+        $request = request();
+
+        // Dynamically include relations if requested
+        if ($request->has('with')) {
+            $relations = explode(',', $request->get('with'));
+            // Filter out invalid relation names for security
+
+            $validRelations = [
+                'avatar_image', //
+                'client_code', //
+                'cart_items', //
+                'addresses', //
+                'orders', //
+                'transactions', //
+                'refund_requests', //
+                'reviewed_refund_requests',
+                'performed_transaction_audit_logs',
+                'reviewed_transactions',
+                'statuses.set_by_user',
+                'set_statuses.user'
+            ];
+
+            $relations = array_intersect($relations, $validRelations);
+
+            if (!empty($relations)) {
+                $query->with($relations);
+            }
+        } else {
+            // Default relations if none requested
+            $query->with(['avatar_image', 'client_code']);
+        }
+
+        return $query;
+    }
+
+    public function statuses()
+    {
+        return $this->hasMany(UserStatus::class, 'user_id');
+    }
+
+    public function currentStatus(): ?UserStatus
+    {
+        return $this->statuses()->latest()->first();
+    }
+
+    public function getStatusAttribute()
+    {
+        return $this->currentStatus();
+    }
+
+    public function set_statuses()
+    {
+        return $this->hasMany(UserStatus::class, 'set_by');
     }
 }
