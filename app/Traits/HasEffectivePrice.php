@@ -2,14 +2,21 @@
 
 namespace App\Traits;
 
-use App\Models\User;
+use App\Services\CurrencyService;
 
 trait HasEffectivePrice
 {
-    public function setEffectivePriceForUser(?User $user)
+    function setValueToConvertedCurrency(string $key, float $value)
     {
-        $this->effective_price = $this->getEffectivePrice($user);
-        $this->applied_promotions = $this->getAppliedPromotions($user);
-        return $this;
+        $converted = app(CurrencyService::class)->convert($value);
+        $this->setAttribute($key, $converted);
+        return $converted;
+    }
+
+    function setValuesToConvertedCurrency(array $amounts)
+    {
+        foreach ($amounts as $key => $value) {
+            $this->setValueToConvertedCurrency($key, $value);
+        }
     }
 }

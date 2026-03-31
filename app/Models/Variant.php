@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Enums\DiscountType;
+use App\Services\CurrencyService;
 use App\Traits\ApplyFilters;
 use App\Traits\DynamicConditionApplicable;
 use App\Traits\HasEffectivePrice;
@@ -12,6 +14,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Log;
 
 class Variant extends Model
 {
@@ -23,6 +26,11 @@ class Variant extends Model
         'price',
         'stock',
         'image_id'
+    ];
+
+    protected $appends = [
+        'effective_price',
+        'applied_promotions',
     ];
 
     /**
@@ -75,23 +83,25 @@ class Variant extends Model
      * @param \App\Models\User|null $user If null, uses auth()->user()
      * @return float
      */
-    public function getEffectivePrice(?User $user = null): float
+    public function getEffectivePriceAttribute(): float
     {
-        $user = $user ?? auth()->user();
+        $user = auth('sanctum')->user();
         $basePrice = $this->price;
+        $effectivePrice = $basePrice;
 
         // Load promotions if not already loaded
         if (!$this->relationLoaded('promotions')) {
             $this->load(['promotions' => fn($q) => $q->active()]);
         }
 
+        /** @var Collection */
         $applicablePromotions = $this->promotions->filter(fn($promo) => $this->isPromotionApplicable($promo, $user));
 
-        if ($applicablePromotions->isEmpty()) {
-            return $basePrice;
+        if ($applicablePromotions->isNotEmpty()) {
+            $effectivePrice = $this->calculateDiscountedPrice($basePrice, $applicablePromotions);
         }
 
-        return $this->calculateDiscountedPrice($basePrice, $applicablePromotions);
+        return $effectivePrice;
     }
 
     /**
@@ -115,15 +125,20 @@ class Variant extends Model
     /**
      * Get all promotions that are currently applied (for badge display).
      */
-    public function getAppliedPromotions(?User $user = null): Collection
+    public function getAppliedPromotionsAttribute(): Collection
     {
-        $user = $user ?? auth()->user();
+        /** @var \App\Models\User */
+        $user = auth('sanctum')->user();
 
         if (!$this->relationLoaded('promotions')) {
             $this->load(['promotions' => fn($q) => $q->active()]);
         }
 
-        return $this->promotions->filter(fn($promo) => $this->isPromotionApplicable($promo, $user));
+        if ($user?->roleIsAdmin())
+            return $this->promotions;
+
+        return $this->promotions
+            ->filter(fn($promo) => $this->isPromotionApplicable($promo, $user));
     }
 
     /**
@@ -179,5 +194,43 @@ class Variant extends Model
         }
 
         return $query;
+    }
+
+    public function convertCurrency(): static
+    {
+        $this->setValuesToConvertedCurrency([
+            'price' => $this->price,
+            'effective_price' => $this->effective_price,
+        ]);
+
+        if ($this->relationLoaded('product')) {
+            $this->product->convertCurrency();
+        }
+
+        if ($this->applied_promotions) {
+            /** @var \App\Models\Promotion */
+            foreach ($this->applied_promotions as $promotion) {
+                $promotion->convertCurrency();
+            }
+        }
+
+        return $this;
+    }
+
+    // Variant snapshot (base price only, effective price is stored separately)
+    public function snapshot(): array
+    {
+        return [
+            'id'    => $this->id,
+            'sku'   => $this->sku,
+            'price' => $this->price,
+            'image' => $this->image?->url ?? null,
+        ];
+    }
+
+    public function convertSnapshotCurrency(array $snapshot): array
+    {
+        $snapshot['price'] = app(CurrencyService::class)->convert($snapshot['price']);
+        return $snapshot;
     }
 }

@@ -2,14 +2,17 @@
 
 namespace App\Queries;
 
+use App\Http\Requests\ProductIndexRequest;
 use App\Models\Product;
-use Illuminate\Http\Request;
+use App\Services\CurrencyService;
 use Laravel\Scout\Builder;
 
 class ProductQuery
 {
-    public static function make(Request $request): Builder
+    public static function make(ProductIndexRequest $request): Builder
     {
+        $relevancySorting = $request->orderBy() === 'created_at' && $request->direction() === 'DESC';
+
         $search = $request->filled('search') ? $request->search : '*';
         $builder = Product::search($search);
 
@@ -18,11 +21,13 @@ class ProductQuery
         }
 
         if ($request->filled('min_price')) {
-            $builder->where('price_min', '>=' . (float) $request->min_price);
+            $min_price = app(CurrencyService::class)->invert($request->min_price);
+            $builder->where('price_min', '>=' . (float) $min_price);
         }
 
         if ($request->filled('max_price')) {
-            $builder->where('price_max', '<=' . (float) $request->max_price);
+            $max_price = app(CurrencyService::class)->invert($request->max_price);
+            $builder->where('price_max', '<=' . (float) $max_price);
         }
 
         if ($request->filled('variant_option_ids')) {
@@ -36,8 +41,14 @@ class ProductQuery
 
         $builder->options(['infix' => 'always']);
 
-        return $builder->query(function ($query) use ($request) {
+        $builder = $builder->query(function ($query) use ($request) {
             return $query->with($request->relations());
-        })->orderBy($request->orderBy(), $request->direction());
+        });
+
+        if (!$relevancySorting) {
+            $builder = $builder->orderBy($request->orderBy(), $request->direction());
+        }
+
+        return $builder;
     }
 }

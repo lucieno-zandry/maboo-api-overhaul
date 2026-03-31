@@ -2,9 +2,11 @@
 
 namespace App\Helpers;
 
+use App\Enums\DiscountType;
 use App\Models\Address;
 use App\Models\Coupon;
 use App\Models\Image;
+use App\Services\CurrencyService;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\UploadedFile;
 use Storage;
@@ -79,57 +81,6 @@ class Functions
         return collect(explode(' ', $query))
             ->map(fn($word) => "+" . $word . "*") // Adds full-text wildcards
             ->implode(' ');
-    }
-
-    /**
-     * @param VariantOption[] $variant_options
-     * @return Map[]
-     */
-    public static function get_variant_options_snapshot($variant_options)
-    {
-        $variant_options_snapshot = [];
-
-        foreach ($variant_options as $option) {
-            $groupName = $option->variant_group->name;
-            $variant_options_snapshot[$groupName] = $option->value;
-        }
-
-        return $variant_options_snapshot;
-    }
-
-    public static function get_address_snapshot(Address $address): array
-    {
-        return [
-            'id'             => $address->id,
-            'user_id'        => $address->user_id,
-            'label'          => $address->label,
-            'recipient_name' => $address->recipient_name,
-            'phone'          => $address->phone,
-            'phone_alt'      => $address->phone_alt,
-            'line1'          => $address->line1,
-            'line2'          => $address->line2,
-            'city'           => $address->city,
-            'state'          => $address->state,
-            'postal_code'    => $address->postal_code,
-            'country'        => $address->country,
-            'address_type'   => $address->address_type,
-            'is_default'     => $address->is_default,
-            'created_at'     => $address->created_at,
-            'updated_at'     => $address->updated_at,
-        ];
-    }
-
-    public static function get_coupon_snapshot(?Coupon $coupon): ?array
-    {
-        if (!$coupon) return null;
-
-        return [
-            'id'              => $coupon->id,
-            'code'            => $coupon->code,
-            'type'            => $coupon->type,
-            'discount'        => $coupon->discount,
-            'min_order_value' => $coupon->min_order_value,
-        ];
     }
 
     public static function get_lang(): string

@@ -2,8 +2,11 @@
 
 namespace App\Models;
 
+use App\Enums\DiscountType;
+use App\Services\CurrencyService;
 use App\Traits\ApplyFilters;
 use App\Traits\DynamicConditionApplicable;
+use App\Traits\HasEffectivePrice;
 use App\Traits\WithOrdering;
 use App\Traits\WithPagination;
 use App\Traits\WithRelationships;
@@ -12,8 +15,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class Coupon extends Model
 {
-    use WithOrdering, WithPagination, WithRelationships, DynamicConditionApplicable, ApplyFilters, HasFactory;
-    
+    use WithOrdering, WithPagination, WithRelationships, DynamicConditionApplicable, ApplyFilters, HasFactory, HasEffectivePrice;
+
     protected $fillable = [
         'code',
         'type',
@@ -40,5 +43,33 @@ class Coupon extends Model
     public function orders()
     {
         return $this->hasMany(Order::class);
+    }
+
+    public function convertCurrency()
+    {
+        if ($this?->type === DiscountType::FIXED_AMOUNT->value) {
+            $this->setValueToConvertedCurrency('discount', $this->discount);
+        }
+
+        return $this;
+    }
+
+    public function snapshot(): array
+    {
+        return [
+            'id'              => $this->id,
+            'code'            => $this->code,
+            'type'            => $this->type,
+            'discount'        => $this->discount,
+            'min_order_value' => $this->min_order_value,
+        ];
+    }
+
+    public function convertSnapshotCurrency(array $snapshot): array
+    {
+        if ($snapshot['type'] === DiscountType::FIXED_AMOUNT->value)
+            $snapshot['discount'] = app(CurrencyService::class)->convert($snapshot['discount']);
+        
+        return $snapshot;
     }
 }
