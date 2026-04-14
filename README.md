@@ -25,6 +25,12 @@ docker run --name maboo_api_overhaul -p 8010:80 -e APP_URL=http://102.16.254.6:8
     command: '--data-dir /data --api-key=xyz --enable-cors'
 ```
 
+## Run Redis
+
+```
+docker run --name redis -p 6379:6379 -d redis
+```
+
 # Import models for typesense indexation
 
 ```
